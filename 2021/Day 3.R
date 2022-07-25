@@ -25,29 +25,25 @@ raw <- read_html(remDr$getPageSource()[[1]]) %>%
   gsub("\\\n$","",.) %>%
   str_split(pattern = "\n") %>%
   unlist() %>%
-  as.data.frame() %>%
-  separate(col = ".", into = LETTERS[1:13], sep = "") 
+  enframe(name=NULL,value="string") %>%
+  separate(col = "string", into = LETTERS[1:13], sep = "") %>%
+  select(-A)
 
-
-start <- proc.time()
 
 rays <- function(x,fun) {
-  ux <- unique(x)
-  tab <- tabulate(match(x, ux))
+  ux = unique(x)
+  tab = table(match(x, ux))
   ux[tab == fun(tab)]
 }
 
-dat = tibble(
+
+dat <- tibble(
   gamma = map_chr(raw, ~{rays(.x, max)}),
-  epsilon = map_chr(raw, ~{rays(.x, min)})
-) %>%
+  epsilon = map_chr(raw, ~{rays(.x, min)})) %>%
   map_dbl(~{paste(.x,collapse = '') %>%
-      strtoi(base = 2) 
-  }) %>%
+      strtoi(base = 2)}) %>%
   prod(.,na.rm = T)
 
-end <- proc.time()
-print(end - start)
 
 
 ## Part 2 ##
@@ -55,39 +51,23 @@ print(end - start)
 # Question:  What is the life support rating of the submarine?
 
 
-raw <-  data.table::fread("test.txt",colClasses = "character") %>%
-  as.data.frame() %>%
-  separate(col = "V1", into = LETTERS[1:6], sep = "") 
-
-
-o2co2 <- function(x, fun, trigger){
-  aux = c()
-  
-  for(j in 2:ncol(x)){
-    ux = unique(x[,j])
-    tab = tabulate(match(x[,j], ux))
-    
-    if(tab[1] == tab[2]){
-      key = trigger
-    } else {
-      key = ux[tab == fun(tab)]
-    }
-    aux =  c(aux, key)
+o2co2 <- function(data, fun, tiebreak){
+  for(i in 1:ncol(data)){
+    tab = table(data[,i])
+    bit = ifelse(tab[paste0(tiebreak)] == fun(tab), tiebreak, names(subset(tab,rownames(tab) != tiebreak)))
+    data = data[data[,i] == bit,]
+    if(nrow(data) == 1) break
   }
-  
-  return(aux)
+  data = paste(data, collapse = '') %>%
+    strtoi(base = 2)
 }
 
+o2 <- o2co2(raw, max, "1")
 
-dat <- tibble(
-  o2 = o2co2(raw, max, "1"),
-  co2 = o2co2(raw, min, "0")
-) %>%
-  map_dbl(~{
-    paste(.x, collapse = '') %>%
-      strtoi(base = 2)
-  }) %>%
-  prod(., na.rm = T)
+co2 <- o2co2(raw, min, "0")
+
+o2*co2
+
 
 
 # End of File
