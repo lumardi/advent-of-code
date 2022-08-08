@@ -54,7 +54,7 @@ for(i in 1:length(draws)){
   cards_marked = cards_marked %>%
     map(.,~{mutate(.x,across(everything(),~gsub(paste0("^",draws[i],"$"), "X", .)))})
   
-#  last_draw = draws[i]
+  last_draw = draws[i]
   
   if(any(map(cards_marked, ~{any(map_chr(.x,~{paste(.,collapse = '')}) == "XXXXX")}) == T |
          map(cards_marked, ~{any(map_chr(as.data.frame(t(.x)),~{paste(.,collapse = '')}) == "XXXXX")}) == T
@@ -78,23 +78,65 @@ score <- winner %>%
 
 cards_marked = cards 
 
+nwon = NA
 
 for(i in 1:length(draws)){
+  # cards_marked = cards_marked %>%
+  #   map(.,~{mutate(.x,across(everything(),~{
+  #     ifelse(
+  #       (any(map(cards_marked, ~{any(map_chr(.,~{paste(.,collapse = '')}) == "XXXXX")}) == T |
+  #              map(cards_marked, ~{any(map_chr(as.data.frame(t(.)),~{paste(.,collapse = '')}) == "XXXXX")}) == T)
+  #       ) == F,
+  #       gsub(paste0("^",draws[i],"$"), "X", .),
+  #       .)}
+  #     ))
+  #     })
+  
   cards_marked = cards_marked %>%
     map(.,~{mutate(.x,across(everything(),~gsub(paste0("^",draws[i],"$"), "X", .)))})
   
-  #  last_draw = draws[i]
   
-  if(any(map(cards_marked, ~{any(map_chr(.x,~{paste(.,collapse = '')}) == "XXXXX")}) == T |
-         map(cards_marked, ~{any(map_chr(as.data.frame(t(.x)),~{paste(.,collapse = '')}) == "XXXXX")}) == T
-  ) == T){
-    draw_won[which(map(cards_marked, ~{any(map_chr(.x,~{paste(.,collapse = '')}) == "XXXXX")}) == T |
-                     map(cards_marked, ~{any(map_chr(as.data.frame(t(.x)),~{paste(.,collapse = '')}) == "XXXXX")}) == T)]
-  }
+  last_draw = draws[i]
+
+  nwon[i] = sum(map(cards_marked, ~{any(map_chr(.x,~{paste(.,collapse = '')}) == "XXXXX")}) == T |
+        map(cards_marked, ~{any(map_chr(as.data.frame(t(.x)),~{paste(.,collapse = '')}) == "XXXXX")}) == T)
   
+  print(i)
   
-  
+  if(any(nwon == "100") == T) break
 }
+
+
+cards_marked = cards[[length(nwon)]] 
+
+last_draw = NA
+
+for(i in 1:length(draws)){
+  cards_marked = cards_marked %>%
+    mutate(across(everything(), ~gsub(paste0("^",draws[i],"$"), "X", .)))
+
+  last_draw = draws[i]
+  if(any(map_chr(cards_marked,~{paste(.x, collapse = '')}) == "XXXXX" | 
+      map_chr(as.data.frame(t(cards_marked)), ~{paste(.x, collapse = '')}) == "XXXXX"
+        )) break
+}
+
+
+score <- cards_marked %>%
+  mutate(across(everything(),as.numeric)) %>%
+  sum(., na.rm = T) * as.numeric(last_draw)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # End of File
